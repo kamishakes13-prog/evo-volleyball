@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EVO Volleyball Club MVP
 
-## Getting Started
+Mobile-first Next.js app for EVO Volleyball Club operations.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router
+- Tailwind CSS
+- Supabase auth and database-ready schema
+- Vercel deployment-ready
+- Stripe-ready helper plus manual payment methods
+
+## MVP Included
+
+- App routes for dashboard, teams, players, payments, calendar, private sessions, and settings
+- Shared role-aware layout for Admin, Coach, and Parent/Player navigation
+- Login and signup routes wired to Supabase server actions
+- Mobile-first Tailwind UI
+- Mock data for the first working screens
+- First-pass admin forms for creating teams and players
+- Team roster capacity and monthly dues
+- Player profiles with parent contact info and balance summary
+- Invoice tracking with unpaid, paid, partial, overdue, and waived statuses
+- Manual payment methods: cash, Zelle, Venmo, Cash App, card, and other
+- Supabase schema for the first backend pass
+- Security runbook in `SECURITY.md`
+- Starter Terms, Privacy, and Consent pages
+
+## Supabase
+
+Run `supabase/schema.sql` in the Supabase SQL editor to create:
+
+- Profiles with Admin, Coach, and Parent/Player roles
+- Coaches, teams, players, invoices, payments, availability, private sessions, calendar events, attendance, consent records, and audit logs
+- Row Level Security policies for Admin, Coach, and Parent/Player data isolation
+- Double-booking prevention for private sessions
+
+## Environment
+
+Copy `.env.example` to `.env.local` and fill in values:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+STRIPE_SECRET_KEY=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
+```
+
+Without Supabase keys, the app runs in demo mode with mock data. After keys are
+added and `supabase/schema.sql` is applied, auth actions and admin create forms
+can write to Supabase.
+
+## Seed Data
+
+After running the schema, load starter EVO records:
+
+```bash
+npm run seed
+```
+
+This uses `SUPABASE_SERVICE_ROLE_KEY` locally and does not expose it in the
+browser.
+
+## Auth Patch
+
+If you already ran `supabase/schema.sql`, also run this SQL file in Supabase:
+
+```text
+supabase/patches/001_auth_profile_trigger.sql
+```
+
+This creates profiles automatically when new users sign up.
+
+## Local Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploy
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Use `DEPLOYMENT.md` for the Vercel launch checklist.

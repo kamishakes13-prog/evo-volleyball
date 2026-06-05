@@ -1,0 +1,263 @@
+import {
+  createPlayer,
+  deletePlayer,
+  linkParentToPlayer,
+  updatePlayer,
+} from "@/app/admin/actions";
+import { money, type Invoice } from "../data";
+import { PageHeader, PageWrap } from "@/components/ui";
+import { requireRole } from "@/lib/security";
+import {
+  getInvoices,
+  getParentProfiles,
+  getPlayers,
+  getTeams,
+} from "@/lib/live-data";
+
+function balanceFor(playerId: string, invoices: Invoice[]) {
+  return invoices
+    .filter((invoice) => invoice.playerId === playerId)
+    .reduce(
+      (summary, invoice) => {
+        summary.total += invoice.amount;
+        summary.paid += invoice.paid;
+        summary.remaining += Math.max(invoice.amount - invoice.paid, 0);
+        return summary;
+      },
+      { total: 0, paid: 0, remaining: 0 },
+    );
+}
+
+export default async function PlayersPage() {
+  const user = await requireRole(["admin", "coach"]);
+  const [players, teams, invoices, parentProfiles] = await Promise.all([
+    getPlayers(),
+    getTeams(),
+    getInvoices(),
+    getParentProfiles(),
+  ]);
+  const isAdmin = user.role === "admin";
+
+  return (
+    <PageWrap>
+      <PageHeader
+        kicker="Players"
+        title="Player profiles"
+        description="Parent contact info, team assignment, jersey number, notes, and balance summary."
+      />
+      <form
+        action={createPlayer}
+        className="mb-5 grid gap-3 rounded-lg border border-blue-100 bg-white p-4 shadow-sm md:grid-cols-3"
+      >
+        <input
+          className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+          name="playerName"
+          placeholder="Player name"
+          required
+        />
+        <input
+          className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+          name="parentName"
+          placeholder="Parent name"
+          required
+        />
+        <input
+          className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+          name="jerseyNumber"
+          placeholder="Jersey #"
+          type="number"
+          min="1"
+          required
+        />
+        <select
+          className="rounded-md border border-blue-100 bg-white px-3 py-3 text-sm text-slate-700 outline-none focus:border-blue-700"
+          name="teamId"
+          defaultValue=""
+          required
+        >
+          <option value="" disabled>
+            Select team
+          </option>
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>
+              {team.name}
+            </option>
+          ))}
+        </select>
+        <input
+          className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+          name="phone"
+          placeholder="Phone"
+        />
+        <input
+          className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+          name="email"
+          placeholder="Email"
+          type="email"
+        />
+        <button
+          className="rounded-md bg-blue-800 px-4 py-3 text-sm font-black text-white"
+          type="submit"
+        >
+          Add Player
+        </button>
+        <input
+          className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700 md:col-span-3"
+          name="notes"
+          placeholder="Notes"
+        />
+      </form>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {players.map((player) => {
+          const balance = balanceFor(player.id, invoices);
+          const teamName =
+            teams.find((team) => team.id === player.teamId)?.name ?? "No team";
+
+          return (
+            <article
+              key={player.id}
+              className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-black">{player.name}</h2>
+                  <p className="text-sm font-bold text-slate-500">
+                    #{player.jersey} | {teamName}
+                  </p>
+                </div>
+                <span className="rounded-md bg-blue-800 px-3 py-2 text-sm font-black text-white">
+                  {money(balance.remaining)} due
+                </span>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-md bg-slate-50 p-3">
+                  <p className="text-xs font-bold text-slate-500">Total</p>
+                  <p className="font-black">{money(balance.total)}</p>
+                </div>
+                <div className="rounded-md bg-slate-50 p-3">
+                  <p className="text-xs font-bold text-slate-500">Paid</p>
+                  <p className="font-black">{money(balance.paid)}</p>
+                </div>
+                <div className="rounded-md bg-lime-50 p-3">
+                  <p className="text-xs font-bold text-slate-500">Remaining</p>
+                  <p className="font-black">{money(balance.remaining)}</p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-1 text-sm text-slate-600">
+                <p>
+                  <span className="font-black text-slate-950">Parent:</span>{" "}
+                  {player.parent}
+                </p>
+                <p>
+                  <span className="font-black text-slate-950">Phone:</span>{" "}
+                  {player.phone}
+                </p>
+                <p>
+                  <span className="font-black text-slate-950">Email:</span>{" "}
+                  {player.email}
+                </p>
+                <p>
+                  <span className="font-black text-slate-950">Notes:</span>{" "}
+                  {player.notes}
+                </p>
+              </div>
+              {isAdmin ? (
+                <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+                  <form action={updatePlayer} className="grid gap-2">
+                    <input name="playerId" type="hidden" value={player.id} />
+                    <input
+                      className="rounded-md border border-blue-100 px-3 py-2 text-sm outline-none focus:border-blue-700"
+                      name="playerName"
+                      defaultValue={player.name}
+                      required
+                    />
+                    <input
+                      className="rounded-md border border-blue-100 px-3 py-2 text-sm outline-none focus:border-blue-700"
+                      name="parentName"
+                      defaultValue={player.parent}
+                      required
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        className="rounded-md border border-blue-100 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-700"
+                        name="teamId"
+                        defaultValue={player.teamId}
+                        required
+                      >
+                        {teams.map((team) => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        className="rounded-md border border-blue-100 px-3 py-2 text-sm outline-none focus:border-blue-700"
+                        name="jerseyNumber"
+                        defaultValue={player.jersey}
+                        min="1"
+                        type="number"
+                        required
+                      />
+                    </div>
+                    <input
+                      className="rounded-md border border-blue-100 px-3 py-2 text-sm outline-none focus:border-blue-700"
+                      name="phone"
+                      defaultValue={player.phone}
+                    />
+                    <input
+                      className="rounded-md border border-blue-100 px-3 py-2 text-sm outline-none focus:border-blue-700"
+                      name="email"
+                      defaultValue={player.email}
+                      type="email"
+                    />
+                    <input
+                      className="rounded-md border border-blue-100 px-3 py-2 text-sm outline-none focus:border-blue-700"
+                      name="notes"
+                      defaultValue={player.notes}
+                    />
+                    <button
+                      className="rounded-md bg-blue-800 px-3 py-2 text-sm font-black text-white"
+                      type="submit"
+                    >
+                      Save Player
+                    </button>
+                  </form>
+                  <form action={deletePlayer}>
+                    <input name="playerId" type="hidden" value={player.id} />
+                    <button
+                      className="w-full rounded-md border border-red-200 px-3 py-2 text-sm font-black text-red-700"
+                      type="submit"
+                    >
+                      Delete Player
+                    </button>
+                  </form>
+                  <form action={linkParentToPlayer} className="grid gap-2">
+                    <input name="playerId" type="hidden" value={player.id} />
+                    <select
+                      className="rounded-md border border-blue-100 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-700"
+                      name="profileId"
+                      defaultValue={player.userId ?? ""}
+                    >
+                      <option value="">No linked parent</option>
+                      {parentProfiles.map((profile) => (
+                        <option key={profile.id} value={profile.id}>
+                          {profile.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      className="rounded-md bg-lime-300 px-3 py-2 text-sm font-black text-blue-950"
+                      type="submit"
+                    >
+                      Link Parent
+                    </button>
+                  </form>
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
+      </div>
+    </PageWrap>
+  );
+}
