@@ -13,6 +13,7 @@ export const navigation = [
   { label: "Players", href: "/players", roles: ["admin", "coach"] },
   { label: "Attendance", href: "/attendance", roles: ["admin", "coach"] },
   { label: "Payments", href: "/payments", roles: ["admin", "parent"] },
+  { label: "Receipts", href: "/receipts", roles: ["admin"] },
   { label: "Calendar", href: "/calendar", roles: ["admin", "coach", "parent"] },
   {
     label: "Private Sessions",

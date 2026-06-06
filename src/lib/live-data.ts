@@ -88,6 +88,44 @@ type DbAttendance = {
   teams: { name: string } | null;
 };
 
+type DbReceipt = {
+  id: string;
+  amount_cents: number;
+  method: string;
+  paid_at: string;
+  invoices: {
+    id: string;
+    title: string;
+    category: string;
+    players: {
+      id: string;
+      player_name: string;
+      parent_name: string;
+      teams: {
+        id: string;
+        name: string;
+        age_group: string;
+      } | null;
+    } | null;
+  } | null;
+};
+
+export type ReceiptRecord = {
+  id: string;
+  amount: number;
+  category: string;
+  invoiceId: string;
+  invoiceTitle: string;
+  method: string;
+  paidAt: string;
+  parentName: string;
+  playerId: string;
+  playerName: string;
+  teamAgeGroup: string;
+  teamId: string;
+  teamName: string;
+};
+
 function invoiceCategory(category: string): Invoice["category"] {
   return category.replaceAll("_", " ") as Invoice["category"];
 }
@@ -335,6 +373,72 @@ export async function getAttendanceRecords() {
     notes: record.notes ?? "",
     recordedAt: record.recorded_at,
   }));
+}
+
+export async function getReceiptRecords(): Promise<ReceiptRecord[]> {
+  const supabase = await createClient();
+
+  if (!supabase) {
+    const playersById = new Map(mockPlayers.map((player) => [player.id, player]));
+    const teamsById = new Map(mockTeams.map((team) => [team.id, team]));
+
+    return mockInvoices
+      .filter((invoice) => invoice.paid > 0)
+      .map((invoice) => {
+        const player = playersById.get(invoice.playerId);
+        const team = player ? teamsById.get(player.teamId) : undefined;
+
+        return {
+          id: `mock-receipt-${invoice.id}`,
+          amount: invoice.paid,
+          category: invoice.category,
+          invoiceId: invoice.id,
+          invoiceTitle: invoice.title,
+          method: invoice.method ?? "other",
+          paidAt: invoice.dueDate,
+          parentName: player?.parent ?? "Parent",
+          playerId: player?.id ?? "unknown",
+          playerName: player?.name ?? "Player",
+          teamAgeGroup: team?.ageGroup ?? "",
+          teamId: team?.id ?? "unassigned",
+          teamName: team?.name ?? "No team",
+        };
+      });
+  }
+
+  const { data, error } = await supabase
+    .from("payments")
+    .select(
+      "id,amount_cents,method,paid_at,invoices(id,title,category,players(id,player_name,parent_name,teams(id,name,age_group)))",
+    )
+    .order("paid_at", { ascending: false });
+
+  if (error || !data) {
+    return [];
+  }
+
+  return (data as unknown as DbReceipt[]).map((receipt) => {
+    const player = receipt.invoices?.players;
+    const team = player?.teams;
+
+    return {
+      id: receipt.id,
+      amount: Math.round(receipt.amount_cents / 100),
+      category: receipt.invoices
+        ? invoiceCategory(receipt.invoices.category)
+        : "custom",
+      invoiceId: receipt.invoices?.id ?? "",
+      invoiceTitle: receipt.invoices?.title ?? "Deleted invoice",
+      method: receipt.method.replaceAll("_", " "),
+      paidAt: receipt.paid_at,
+      parentName: player?.parent_name ?? "Parent",
+      playerId: player?.id ?? "unknown",
+      playerName: player?.player_name ?? "Player",
+      teamAgeGroup: team?.age_group ?? "",
+      teamId: team?.id ?? "unassigned",
+      teamName: team?.name ?? "No team",
+    };
+  });
 }
 
 export async function getDashboard() {
