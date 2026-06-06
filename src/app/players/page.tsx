@@ -5,6 +5,7 @@ import {
   linkParentToPlayer,
   updatePlayer,
 } from "@/app/admin/actions";
+import Link from "next/link";
 import { money, type Invoice, type Player, type Team } from "../data";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader, PageWrap } from "@/components/ui";
@@ -291,6 +292,12 @@ export default async function PlayersPage({ searchParams }: PlayersPageProps) {
                   {player.notes}
                 </p>
               </div>
+              <Link
+                className="mt-4 block rounded-md bg-blue-800 px-3 py-2 text-center text-sm font-black text-white"
+                href={`/players/${player.id}`}
+              >
+                View Profile
+              </Link>
               {isAdmin ? (
                 <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
                   <form action={updatePlayer} className="grid gap-2">
