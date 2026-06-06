@@ -5,6 +5,7 @@ import {
   updatePlayer,
 } from "@/app/admin/actions";
 import { money, type Invoice } from "../data";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader, PageWrap } from "@/components/ui";
 import { requireRole } from "@/lib/security";
 import {
@@ -109,6 +110,9 @@ export default async function PlayersPage() {
           const teamName =
             teams.find((team) => team.id === player.teamId)?.name ?? "No team";
           const needsTeam = !player.teamId;
+          const linkedParent = parentProfiles.find(
+            (profile) => profile.id === player.userId,
+          );
 
           return (
             <article
@@ -124,6 +128,15 @@ export default async function PlayersPage() {
                     {player.jersey ? `#${player.jersey}` : "No jersey"} |{" "}
                     {teamName}
                   </p>
+                  {linkedParent ? (
+                    <p className="mt-1 text-xs font-black uppercase text-lime-700">
+                      Linked parent: {linkedParent.name}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs font-black uppercase text-slate-400">
+                      No parent account linked
+                    </p>
+                  )}
                 </div>
                 <span
                   className={`rounded-md px-3 py-2 text-sm font-black ${
@@ -153,6 +166,14 @@ export default async function PlayersPage() {
                 <p>
                   <span className="font-black text-slate-950">Parent:</span>{" "}
                   {player.parent}
+                </p>
+                <p>
+                  <span className="font-black text-slate-950">
+                    Account link:
+                  </span>{" "}
+                  {linkedParent
+                    ? `${linkedParent.name} is connected to this player`
+                    : "Not linked yet"}
                 </p>
                 <p>
                   <span className="font-black text-slate-950">Phone:</span>{" "}
@@ -230,12 +251,12 @@ export default async function PlayersPage() {
                   </form>
                   <form action={deletePlayer}>
                     <input name="playerId" type="hidden" value={player.id} />
-                    <button
+                    <ConfirmSubmitButton
                       className="w-full rounded-md border border-red-200 px-3 py-2 text-sm font-black text-red-700"
-                      type="submit"
+                      message={`Are you sure you would like to delete ${player.name}? This will remove the player profile and related player records.`}
                     >
                       Delete Player
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                   <form action={linkParentToPlayer} className="grid gap-2">
                     <input name="playerId" type="hidden" value={player.id} />
