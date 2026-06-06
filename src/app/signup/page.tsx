@@ -8,7 +8,22 @@ const playerSections = [
   { label: "Player 3", suffix: "3", required: false },
 ];
 
-export default function SignupPage() {
+const errorMessages: Record<string, string> = {
+  player: "Parents must add at least one player before creating an account.",
+  "rate-limit": "Too many signup attempts. Please wait a minute and try again.",
+  signup: "We could not create that account. The email may already be registered.",
+  validation: "Please check the required fields and try again.",
+};
+
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; success?: string }>;
+}) {
+  const params = await searchParams;
+  const success = params.success === "check-email";
+  const errorMessage = params.error ? errorMessages[params.error] : null;
+
   return (
     <PageWrap>
       <div className="mx-auto max-w-md">
@@ -17,6 +32,20 @@ export default function SignupPage() {
           title="Join the EVO portal"
           description="Parents can add their player during signup. Admin will assign the player to the right team."
         />
+        {success ? (
+          <div className="mb-4 rounded-lg border border-lime-300 bg-lime-50 p-4 text-sm leading-6 text-blue-950 shadow-sm">
+            <p className="font-black">Check your email to confirm your account.</p>
+            <p className="mt-1 font-bold">
+              After confirmation, EVO admin will review the player info and
+              place each player on the correct team.
+            </p>
+          </div>
+        ) : null}
+        {errorMessage ? (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-bold leading-6 text-red-700 shadow-sm">
+            {errorMessage}
+          </div>
+        ) : null}
         <form
           action={signUp}
           className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm"

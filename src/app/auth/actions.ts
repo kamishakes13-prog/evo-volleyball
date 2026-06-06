@@ -33,7 +33,7 @@ export async function signIn(formData: FormData) {
     redirect("/login?error=signin");
   }
 
-  redirect("/");
+  redirect("/signup?success=check-email");
 }
 
 export async function signUp(formData: FormData) {
