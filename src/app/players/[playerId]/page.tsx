@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { createInvoice } from "@/app/admin/actions";
 import { money } from "@/app/data";
 import { PageHeader, PageWrap, StatusPill } from "@/components/ui";
 import {
@@ -30,7 +31,7 @@ function formatDate(value: string) {
 export default async function PlayerDetailPage({
   params,
 }: PlayerDetailPageProps) {
-  await requireRole(["admin", "coach"]);
+  const user = await requireRole(["admin", "coach"]);
   const { playerId } = await params;
   const [players, teams, invoices, receipts, sessions] = await Promise.all([
     getPlayers(),
@@ -49,6 +50,11 @@ export default async function PlayerDetailPage({
   const playerInvoices = invoices.filter(
     (invoice) => invoice.playerId === player.id,
   );
+  const invoiceTimeline = [...playerInvoices].sort((first, second) =>
+    (first.dueDate || "9999-12-31").localeCompare(
+      second.dueDate || "9999-12-31",
+    ),
+  );
   const playerReceipts = receipts.filter(
     (receipt) => receipt.playerId === player.id,
   );
@@ -64,6 +70,11 @@ export default async function PlayerDetailPage({
     },
     { paid: 0, remaining: 0, total: 0 },
   );
+  const progress =
+    balance.total > 0
+      ? Math.min(100, Math.round((balance.paid / balance.total) * 100))
+      : 0;
+  const isAdmin = user.role === "admin";
 
   return (
     <PageWrap>
@@ -143,6 +154,87 @@ export default async function PlayerDetailPage({
           </div>
 
           <article className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black text-blue-900">
+                  Payment progress
+                </h2>
+                <p className="text-sm font-bold text-slate-500">
+                  {money(balance.paid)} paid of {money(balance.total)}
+                </p>
+              </div>
+              <p className="text-xl font-black text-blue-900">{progress}%</p>
+            </div>
+            <div className="mt-4 h-4 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-lime-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="mt-3 flex justify-between text-xs font-black uppercase text-slate-500">
+              <span>Paid {money(balance.paid)}</span>
+              <span>Remaining {money(balance.remaining)}</span>
+            </div>
+          </article>
+
+          {isAdmin ? (
+            <form
+              action={createInvoice}
+              className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm"
+            >
+              <input name="playerId" type="hidden" value={player.id} />
+              <h2 className="text-lg font-black text-blue-900">
+                Set amount due
+              </h2>
+              <p className="mt-1 text-sm font-bold leading-6 text-slate-500">
+                Add a charge to this player profile. It will appear in the
+                timeline and payment history once paid.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <input
+                  className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700 sm:col-span-2"
+                  name="title"
+                  placeholder="June Monthly Dues"
+                  required
+                />
+                <select
+                  className="rounded-md border border-blue-100 bg-white px-3 py-3 text-sm text-slate-700 outline-none focus:border-blue-700"
+                  name="category"
+                  defaultValue="monthly_dues"
+                  required
+                >
+                  <option value="monthly_dues">Monthly dues</option>
+                  <option value="tournament_fee">Tournament fee</option>
+                  <option value="uniform">Uniform</option>
+                  <option value="camp">Camp</option>
+                  <option value="private_session">Private session</option>
+                  <option value="custom">Custom</option>
+                </select>
+                <input
+                  className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+                  name="amount"
+                  placeholder="Amount"
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  required
+                />
+                <input
+                  className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+                  name="dueDate"
+                  type="date"
+                />
+                <button
+                  className="rounded-md bg-blue-800 px-4 py-3 text-sm font-black text-white sm:col-span-2"
+                  type="submit"
+                >
+                  Add Amount Due
+                </button>
+              </div>
+            </form>
+          ) : null}
+
+          <article className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm">
             <h2 className="text-lg font-black text-blue-900">
               Private sessions
             </h2>
@@ -176,11 +268,24 @@ export default async function PlayerDetailPage({
 
         <section className="space-y-4">
           <article className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm">
-            <h2 className="text-lg font-black text-blue-900">Invoices</h2>
+            <h2 className="text-lg font-black text-blue-900">
+              Payment timeline
+            </h2>
             <div className="mt-4 space-y-3">
-              {playerInvoices.length ? (
-                playerInvoices.map((invoice) => (
-                  <div className="rounded-md bg-slate-50 p-3" key={invoice.id}>
+              {invoiceTimeline.length ? (
+                invoiceTimeline.map((invoice, index) => (
+                  <div
+                    className="grid grid-cols-[auto_1fr] gap-3 rounded-md bg-slate-50 p-3"
+                    key={invoice.id}
+                  >
+                    <div className="flex flex-col items-center">
+                      <span className="grid size-8 place-items-center rounded-full bg-blue-800 text-xs font-black text-white">
+                        {index + 1}
+                      </span>
+                      {index < invoiceTimeline.length - 1 ? (
+                        <span className="h-full min-h-8 w-0.5 bg-blue-100" />
+                      ) : null}
+                    </div>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-black">{invoice.title}</p>
