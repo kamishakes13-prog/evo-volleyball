@@ -18,8 +18,8 @@ export default async function DashboardPage() {
             EVO club operations, ready for teams, players, and payments.
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-blue-100">
-            This MVP starts with clean pages, role-aware navigation, mock data,
-            and a Supabase schema ready for real club records.
+            Live club records, role-aware navigation, manual payment tracking,
+            schedules, attendance, and private sessions are ready for admin use.
           </p>
         </div>
       </section>
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
           <StatCard
             label="Total players"
             value={String(dashboard.totalPlayers)}
-            detail="Active mock player profiles"
+            detail="Active player profiles"
           />
           <StatCard
             label="Active teams"
