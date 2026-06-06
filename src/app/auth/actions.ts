@@ -39,7 +39,7 @@ export async function signIn(formData: FormData) {
     redirect("/login?error=signin");
   }
 
-  redirect("/signup?success=check-email");
+  redirect("/");
 }
 
 export async function signUp(formData: FormData) {
@@ -152,7 +152,28 @@ export async function signUp(formData: FormData) {
     }
   }
 
-  redirect("/");
+  redirect("/signup?success=check-email");
+}
+
+export async function resendConfirmation(formData: FormData) {
+  const email = cleanString(formData.get("email"), 180).toLowerCase();
+
+  if (!rateLimit(`confirm-resend:${email}`, 3, 60_000)) {
+    redirect("/login?error=rate-limit");
+  }
+
+  const supabase = await createClient();
+
+  if (!supabase || !isEmail(email)) {
+    redirect("/login?error=validation");
+  }
+
+  await supabase.auth.resend({
+    email,
+    type: "signup",
+  });
+
+  redirect("/login?success=confirmation-sent");
 }
 
 export async function signOut() {
