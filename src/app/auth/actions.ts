@@ -56,16 +56,36 @@ export async function signUp(formData: FormData) {
     ? requestedRole
     : "parent_player";
   const phone = cleanString(formData.get("phone"), 40);
-  const playerName = cleanString(formData.get("playerName"), 120);
-  const playerAgeGroup = cleanString(formData.get("playerAgeGroup"), 30);
-  const jerseyNumber = Number(cleanString(formData.get("jerseyNumber"), 4));
-  const playerNotes = cleanString(formData.get("playerNotes"), 240);
+  const players = [1, 2, 3]
+    .map((index) => {
+      const suffix = index === 1 ? "" : String(index);
+      const playerName = cleanString(formData.get(`playerName${suffix}`), 120);
+      const playerAgeGroup = cleanString(
+        formData.get(`playerAgeGroup${suffix}`),
+        30,
+      );
+      const jerseyNumber = Number(
+        cleanString(formData.get(`jerseyNumber${suffix}`), 4),
+      );
+      const playerNotes = cleanString(
+        formData.get(`playerNotes${suffix}`),
+        240,
+      );
+
+      return {
+        jerseyNumber,
+        playerAgeGroup,
+        playerName,
+        playerNotes,
+      };
+    })
+    .filter((player) => player.playerName);
 
   if (!fullName || !isEmail(email) || password.length < 8) {
     redirect("/signup?error=validation");
   }
 
-  if (role === "parent_player" && !playerName) {
+  if (role === "parent_player" && players.length === 0) {
     redirect("/signup?error=player");
   }
 
@@ -95,27 +115,33 @@ export async function signUp(formData: FormData) {
       role,
     });
 
-    if (role === "parent_player" && playerName) {
-      const notes = [
-        playerAgeGroup ? `Requested age group: ${playerAgeGroup}` : "",
-        playerNotes,
-      ]
-        .filter(Boolean)
-        .join(" | ");
+    if (role === "parent_player" && players.length > 0) {
+      await client.from("players").insert(
+        players.map((player) => {
+          const notes = [
+            player.playerAgeGroup
+              ? `Requested age group: ${player.playerAgeGroup}`
+              : "",
+            player.playerNotes,
+          ]
+            .filter(Boolean)
+            .join(" | ");
 
-      await client.from("players").insert({
-        user_id: data.user.id,
-        team_id: null,
-        player_name: playerName,
-        parent_name: fullName,
-        phone,
-        email,
-        jersey_number:
-          Number.isInteger(jerseyNumber) && jerseyNumber > 0
-            ? jerseyNumber
-            : null,
-        notes: notes || "Parent signup - needs team assignment.",
-      });
+          return {
+            user_id: data.user?.id,
+            team_id: null,
+            player_name: player.playerName,
+            parent_name: fullName,
+            phone,
+            email,
+            jersey_number:
+              Number.isInteger(player.jerseyNumber) && player.jerseyNumber > 0
+                ? player.jerseyNumber
+                : null,
+            notes: notes || "Parent signup - needs team assignment.",
+          };
+        }),
+      );
     }
   }
 

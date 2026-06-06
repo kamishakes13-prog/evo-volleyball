@@ -2,6 +2,12 @@ import Link from "next/link";
 import { signUp } from "@/app/auth/actions";
 import { PageHeader, PageWrap } from "@/components/ui";
 
+const playerSections = [
+  { label: "Player 1", suffix: "", required: true },
+  { label: "Player 2", suffix: "2", required: false },
+  { label: "Player 3", suffix: "3", required: false },
+];
+
 export default function SignupPage() {
   return (
     <PageWrap>
@@ -60,44 +66,58 @@ export default function SignupPage() {
           <div className="mt-5 rounded-md border border-blue-100 bg-blue-50 p-3">
             <p className="text-sm font-black text-blue-900">Player info</p>
             <p className="mt-1 text-xs font-bold leading-5 text-slate-600">
-              Required for parents. Coaches can leave this section blank.
+              Player 1 is required for parents. Add Player 2 or 3 for siblings.
+              Coaches can leave this section blank.
             </p>
-            <label className="mt-3 block text-sm font-black text-slate-700">
-              Player name
-              <input
-                className="mt-2 w-full rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
-                name="playerName"
-                placeholder="Ava Thompson"
-              />
-            </label>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <label className="block text-sm font-black text-slate-700">
-                Age group
-                <input
-                  className="mt-2 w-full rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
-                  name="playerAgeGroup"
-                  placeholder="14U"
-                />
-              </label>
-              <label className="block text-sm font-black text-slate-700">
-                Jersey #
-                <input
-                  className="mt-2 w-full rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
-                  name="jerseyNumber"
-                  min="1"
-                  placeholder="7"
-                  type="number"
-                />
-              </label>
-            </div>
-            <label className="mt-3 block text-sm font-black text-slate-700">
-              Notes
-              <input
-                className="mt-2 w-full rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
-                name="playerNotes"
-                placeholder="Preferred position, previous team, or anything admin should know"
-              />
-            </label>
+            {playerSections.map((section) => (
+              <fieldset
+                className="mt-4 rounded-md border border-blue-100 bg-white p-3"
+                key={section.label}
+              >
+                <legend className="px-1 text-xs font-black uppercase text-blue-900">
+                  {section.label}
+                  {!section.required ? " optional" : ""}
+                </legend>
+                <label className="mt-2 block text-sm font-black text-slate-700">
+                  Player name
+                  <input
+                    className="mt-2 w-full rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+                    name={`playerName${section.suffix}`}
+                    placeholder={
+                      section.suffix ? "Sibling name" : "Ava Thompson"
+                    }
+                  />
+                </label>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <label className="block text-sm font-black text-slate-700">
+                    Age group
+                    <input
+                      className="mt-2 w-full rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+                      name={`playerAgeGroup${section.suffix}`}
+                      placeholder="14U"
+                    />
+                  </label>
+                  <label className="block text-sm font-black text-slate-700">
+                    Jersey #
+                    <input
+                      className="mt-2 w-full rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+                      name={`jerseyNumber${section.suffix}`}
+                      min="1"
+                      placeholder="7"
+                      type="number"
+                    />
+                  </label>
+                </div>
+                <label className="mt-3 block text-sm font-black text-slate-700">
+                  Notes
+                  <input
+                    className="mt-2 w-full rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
+                    name={`playerNotes${section.suffix}`}
+                    placeholder="Preferred position, previous team, or anything admin should know"
+                  />
+                </label>
+              </fieldset>
+            ))}
           </div>
           <label className="mt-4 block text-sm font-black text-slate-700">
             Password
