@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   cleanMoneyToCents,
+  cleanOptionalPositiveInteger,
   cleanPositiveInteger,
   cleanString,
   isEmail,
@@ -159,11 +160,13 @@ export async function createPlayer(formData: FormData) {
   const parentName = cleanString(formData.get("parentName"), 120);
   const phone = cleanString(formData.get("phone"), 40);
   const email = cleanString(formData.get("email"), 180).toLowerCase();
-  const jerseyNumber = cleanPositiveInteger(formData.get("jerseyNumber"), 1);
+  const jerseyNumber = cleanOptionalPositiveInteger(
+    formData.get("jerseyNumber"),
+  );
   const teamId = cleanString(formData.get("teamId"), 80);
   const notes = cleanString(formData.get("notes"), 500);
 
-  if (!playerName || !parentName || !teamId || (email && !isEmail(email))) {
+  if (!playerName || !parentName || (email && !isEmail(email))) {
     return;
   }
 
@@ -172,13 +175,11 @@ export async function createPlayer(formData: FormData) {
     return;
   }
 
-  const { data: team } = await supabase
-    .from("teams")
-    .select("id,name")
-    .eq("id", teamId)
-    .single();
+  const { data: team } = teamId
+    ? await supabase.from("teams").select("id,name").eq("id", teamId).single()
+    : { data: null };
 
-  if (!team) {
+  if (teamId && !team) {
     return;
   }
 
@@ -187,7 +188,7 @@ export async function createPlayer(formData: FormData) {
     .insert({
       player_name: playerName,
       parent_name: parentName,
-      team_id: teamId,
+      team_id: teamId || null,
       phone,
       email,
       jersey_number: jerseyNumber,
@@ -201,7 +202,7 @@ export async function createPlayer(formData: FormData) {
     action: "player.create",
     entity_type: "player",
     entity_id: data?.id,
-    metadata: { playerName, parentName, teamId, teamName: team.name },
+    metadata: { playerName, parentName, teamId, teamName: team?.name },
   });
 
   revalidatePath("/players");
@@ -220,7 +221,9 @@ export async function updatePlayer(formData: FormData) {
   const parentName = cleanString(formData.get("parentName"), 120);
   const phone = cleanString(formData.get("phone"), 40);
   const email = cleanString(formData.get("email"), 180).toLowerCase();
-  const jerseyNumber = cleanPositiveInteger(formData.get("jerseyNumber"), 1);
+  const jerseyNumber = cleanOptionalPositiveInteger(
+    formData.get("jerseyNumber"),
+  );
   const teamId = cleanString(formData.get("teamId"), 80);
   const notes = cleanString(formData.get("notes"), 500);
 
@@ -228,7 +231,6 @@ export async function updatePlayer(formData: FormData) {
     !playerId ||
     !playerName ||
     !parentName ||
-    !teamId ||
     (email && !isEmail(email))
   ) {
     return;
@@ -239,13 +241,11 @@ export async function updatePlayer(formData: FormData) {
     return;
   }
 
-  const { data: team } = await supabase
-    .from("teams")
-    .select("id,name")
-    .eq("id", teamId)
-    .single();
+  const { data: team } = teamId
+    ? await supabase.from("teams").select("id,name").eq("id", teamId).single()
+    : { data: null };
 
-  if (!team) {
+  if (teamId && !team) {
     return;
   }
 
@@ -254,7 +254,7 @@ export async function updatePlayer(formData: FormData) {
     .update({
       player_name: playerName,
       parent_name: parentName,
-      team_id: teamId,
+      team_id: teamId || null,
       phone,
       email,
       jersey_number: jerseyNumber,
@@ -267,7 +267,7 @@ export async function updatePlayer(formData: FormData) {
     action: "player.update",
     entity_type: "player",
     entity_id: playerId,
-    metadata: { playerName, parentName, teamId, teamName: team.name },
+    metadata: { playerName, parentName, teamId, teamName: team?.name },
   });
 
   revalidatePath("/players");

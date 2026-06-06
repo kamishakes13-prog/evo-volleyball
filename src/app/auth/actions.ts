@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { cleanString, isEmail, rateLimit } from "@/lib/security";
 
 export async function signIn(formData: FormData) {
@@ -54,9 +55,18 @@ export async function signUp(formData: FormData) {
   const role = ["coach", "parent_player"].includes(requestedRole)
     ? requestedRole
     : "parent_player";
+  const phone = cleanString(formData.get("phone"), 40);
+  const playerName = cleanString(formData.get("playerName"), 120);
+  const playerAgeGroup = cleanString(formData.get("playerAgeGroup"), 30);
+  const jerseyNumber = Number(cleanString(formData.get("jerseyNumber"), 4));
+  const playerNotes = cleanString(formData.get("playerNotes"), 240);
 
   if (!fullName || !isEmail(email) || password.length < 8) {
     redirect("/signup?error=validation");
+  }
+
+  if (role === "parent_player" && !playerName) {
+    redirect("/signup?error=player");
   }
 
   const { data, error } = await supabase.auth.signUp({
@@ -75,11 +85,38 @@ export async function signUp(formData: FormData) {
   }
 
   if (data.user) {
-    await supabase.from("profiles").upsert({
+    const adminSupabase = createServiceClient();
+    const client = adminSupabase ?? supabase;
+
+    await client.from("profiles").upsert({
       id: data.user.id,
       full_name: fullName,
+      phone,
       role,
     });
+
+    if (role === "parent_player" && playerName) {
+      const notes = [
+        playerAgeGroup ? `Requested age group: ${playerAgeGroup}` : "",
+        playerNotes,
+      ]
+        .filter(Boolean)
+        .join(" | ");
+
+      await client.from("players").insert({
+        user_id: data.user.id,
+        team_id: null,
+        player_name: playerName,
+        parent_name: fullName,
+        phone,
+        email,
+        jersey_number:
+          Number.isInteger(jerseyNumber) && jerseyNumber > 0
+            ? jerseyNumber
+            : null,
+        notes: notes || "Parent signup - needs team assignment.",
+      });
+    }
   }
 
   redirect("/");

@@ -67,17 +67,13 @@ export default async function PlayersPage() {
           placeholder="Jersey #"
           type="number"
           min="1"
-          required
         />
         <select
           className="rounded-md border border-blue-100 bg-white px-3 py-3 text-sm text-slate-700 outline-none focus:border-blue-700"
           name="teamId"
           defaultValue=""
-          required
         >
-          <option value="" disabled>
-            Select team
-          </option>
+          <option value="">No team yet</option>
           {teams.map((team) => (
             <option key={team.id} value={team.id}>
               {team.name}
@@ -112,21 +108,31 @@ export default async function PlayersPage() {
           const balance = balanceFor(player.id, invoices);
           const teamName =
             teams.find((team) => team.id === player.teamId)?.name ?? "No team";
+          const needsTeam = !player.teamId;
 
           return (
             <article
               key={player.id}
-              className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm"
+              className={`rounded-lg border bg-white p-4 shadow-sm ${
+                needsTeam ? "border-lime-300" : "border-blue-100"
+              }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-black">{player.name}</h2>
                   <p className="text-sm font-bold text-slate-500">
-                    #{player.jersey} | {teamName}
+                    {player.jersey ? `#${player.jersey}` : "No jersey"} |{" "}
+                    {teamName}
                   </p>
                 </div>
-                <span className="rounded-md bg-blue-800 px-3 py-2 text-sm font-black text-white">
-                  {money(balance.remaining)} due
+                <span
+                  className={`rounded-md px-3 py-2 text-sm font-black ${
+                    needsTeam
+                      ? "bg-lime-300 text-blue-950"
+                      : "bg-blue-800 text-white"
+                  }`}
+                >
+                  {needsTeam ? "Assign team" : `${money(balance.remaining)} due`}
                 </span>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -182,8 +188,8 @@ export default async function PlayersPage() {
                         className="rounded-md border border-blue-100 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-700"
                         name="teamId"
                         defaultValue={player.teamId}
-                        required
                       >
+                        <option value="">No team yet</option>
                         {teams.map((team) => (
                           <option key={team.id} value={team.id}>
                             {team.name}
@@ -193,10 +199,10 @@ export default async function PlayersPage() {
                       <input
                         className="rounded-md border border-blue-100 px-3 py-2 text-sm outline-none focus:border-blue-700"
                         name="jerseyNumber"
-                        defaultValue={player.jersey}
+                        defaultValue={player.jersey || ""}
                         min="1"
+                        placeholder="Jersey #"
                         type="number"
-                        required
                       />
                     </div>
                     <input
