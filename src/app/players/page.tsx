@@ -5,7 +5,7 @@ import {
   linkParentToPlayer,
   updatePlayer,
 } from "@/app/admin/actions";
-import { money, type Invoice } from "../data";
+import { money, type Invoice, type Player, type Team } from "../data";
 import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { PageHeader, PageWrap } from "@/components/ui";
 import { requireRole } from "@/lib/security";
@@ -30,8 +30,32 @@ function balanceFor(playerId: string, invoices: Invoice[]) {
     );
 }
 
-export default async function PlayersPage() {
+type PlayersPageProps = {
+  searchParams: Promise<{ team?: string }>;
+};
+
+function groupedPlayers(players: Player[], teams: Team[]) {
+  const groups = [
+    {
+      id: "unassigned",
+      label: "Unassigned",
+      helper: "Parent-created players and players waiting for team placement.",
+      players: players.filter((player) => !player.teamId),
+    },
+    ...teams.map((team) => ({
+      id: team.id,
+      label: team.name,
+      helper: `${team.ageGroup} | ${team.schedule}`,
+      players: players.filter((player) => player.teamId === team.id),
+    })),
+  ];
+
+  return groups.filter((group) => group.players.length > 0);
+}
+
+export default async function PlayersPage({ searchParams }: PlayersPageProps) {
   const user = await requireRole(["admin", "coach"]);
+  const params = await searchParams;
   const [players, teams, invoices, parentProfiles] = await Promise.all([
     getPlayers(),
     getTeams(),
@@ -39,6 +63,14 @@ export default async function PlayersPage() {
     getParentProfiles(),
   ]);
   const isAdmin = user.role === "admin";
+  const selectedTeam = params.team ?? "all";
+  const visiblePlayers =
+    selectedTeam === "all"
+      ? players
+      : selectedTeam === "unassigned"
+        ? players.filter((player) => !player.teamId)
+        : players.filter((player) => player.teamId === selectedTeam);
+  const playerGroups = groupedPlayers(visiblePlayers, teams);
 
   return (
     <PageWrap>
@@ -47,6 +79,33 @@ export default async function PlayersPage() {
         title="Player profiles"
         description="Parent contact info, team assignment, jersey number, notes, and balance summary."
       />
+      <form
+        className="mb-5 rounded-lg border border-blue-100 bg-white p-4 shadow-sm"
+        method="get"
+      >
+        <label className="block text-sm font-black text-slate-700">
+          Filter players
+          <select
+            className="mt-2 w-full rounded-md border border-blue-100 bg-white px-3 py-3 text-sm text-slate-700 outline-none focus:border-blue-700"
+            defaultValue={selectedTeam}
+            name="team"
+          >
+            <option value="all">All players by team</option>
+            <option value="unassigned">Unassigned only</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="mt-3 w-full rounded-md bg-blue-800 px-4 py-3 text-sm font-black text-white"
+          type="submit"
+        >
+          Apply Filter
+        </button>
+      </form>
       <form
         action={createPlayer}
         className="mb-5 grid gap-3 rounded-lg border border-blue-100 bg-white p-4 shadow-sm md:grid-cols-3"
@@ -105,8 +164,30 @@ export default async function PlayersPage() {
           placeholder="Notes"
         />
       </form>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {players.map((player) => {
+      <div className="space-y-5">
+        {playerGroups.map((group) => (
+          <section
+            className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm"
+            key={group.id}
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase text-lime-700">
+                  Player group
+                </p>
+                <h2 className="text-xl font-black text-blue-900">
+                  {group.label}
+                </h2>
+                <p className="text-sm font-bold text-slate-500">
+                  {group.helper}
+                </p>
+              </div>
+              <span className="rounded-md bg-blue-800 px-3 py-2 text-sm font-black text-white">
+                {group.players.length}
+              </span>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+        {group.players.map((player) => {
           const balance = balanceFor(player.id, invoices);
           const teamName =
             teams.find((team) => team.id === player.teamId)?.name ?? "No team";
@@ -325,6 +406,14 @@ export default async function PlayersPage() {
             </article>
           );
         })}
+            </div>
+          </section>
+        ))}
+        {!playerGroups.length ? (
+          <section className="rounded-lg border border-blue-100 bg-white p-4 text-sm font-bold text-slate-600 shadow-sm">
+            No players found for this filter.
+          </section>
+        ) : null}
       </div>
     </PageWrap>
   );
