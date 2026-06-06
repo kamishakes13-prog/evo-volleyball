@@ -157,10 +157,10 @@ export default async function PlayerDetailPage({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-black text-blue-900">
-                  Payment progress
+                  Payment plan progress
                 </h2>
                 <p className="text-sm font-bold text-slate-500">
-                  {money(balance.paid)} paid of {money(balance.total)}
+                  {money(balance.paid)} paid toward {money(balance.total)}
                 </p>
               </div>
               <p className="text-xl font-black text-blue-900">{progress}%</p>
@@ -184,36 +184,37 @@ export default async function PlayerDetailPage({
             >
               <input name="playerId" type="hidden" value={player.id} />
               <h2 className="text-lg font-black text-blue-900">
-                Set amount due
+                Set payment plan amount
               </h2>
               <p className="mt-1 text-sm font-bold leading-6 text-slate-500">
-                Add a charge to this player profile. It will appear in the
-                timeline and payment history once paid.
+                Add a set payment plan amount for this player. It will appear
+                in the timeline and update the progress bar as payments are
+                recorded.
               </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <input
                   className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700 sm:col-span-2"
                   name="title"
-                  placeholder="June Monthly Dues"
+                  placeholder="Season Payment Plan"
                   required
                 />
                 <select
                   className="rounded-md border border-blue-100 bg-white px-3 py-3 text-sm text-slate-700 outline-none focus:border-blue-700"
                   name="category"
-                  defaultValue="monthly_dues"
+                  defaultValue="custom"
                   required
                 >
-                  <option value="monthly_dues">Monthly dues</option>
+                  <option value="custom">Payment plan</option>
                   <option value="tournament_fee">Tournament fee</option>
                   <option value="uniform">Uniform</option>
                   <option value="camp">Camp</option>
                   <option value="private_session">Private session</option>
-                  <option value="custom">Custom</option>
+                  <option value="monthly_dues">Monthly dues</option>
                 </select>
                 <input
                   className="rounded-md border border-blue-100 px-3 py-3 text-sm outline-none focus:border-blue-700"
                   name="amount"
-                  placeholder="Amount"
+                  placeholder="Plan amount"
                   type="number"
                   min="1"
                   step="0.01"
@@ -228,7 +229,7 @@ export default async function PlayerDetailPage({
                   className="rounded-md bg-blue-800 px-4 py-3 text-sm font-black text-white sm:col-span-2"
                   type="submit"
                 >
-                  Add Amount Due
+                  Add Payment Plan
                 </button>
               </div>
             </form>
@@ -269,7 +270,7 @@ export default async function PlayerDetailPage({
         <section className="space-y-4">
           <article className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm">
             <h2 className="text-lg font-black text-blue-900">
-              Payment timeline
+              Payment plan timeline
             </h2>
             <div className="mt-4 space-y-3">
               {invoiceTimeline.length ? (
