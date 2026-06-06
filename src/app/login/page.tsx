@@ -6,15 +6,36 @@ const hasSupabaseEnv =
   Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
   Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-export default function LoginPage() {
+const errorMessages: Record<string, string> = {
+  "email-not-confirmed":
+    "Check your email and click the confirmation link before signing in.",
+  "rate-limit": "Too many login attempts. Please wait a minute and try again.",
+  signin:
+    "That email or password did not work. Make sure the account exists, the email is confirmed, and the password is correct.",
+  validation: "Enter a valid email and a password with at least 8 characters.",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const params = await searchParams;
+  const errorMessage = params.error ? errorMessages[params.error] : null;
+
   return (
     <PageWrap>
       <div className="mx-auto max-w-md">
         <PageHeader
           kicker="Sign in"
           title="Access your EVO portal"
-          description="Supabase auth is wired for the live app. Add environment variables to enable real sign in."
+          description="Use the email and password for your EVO account. New accounts must confirm email first."
         />
+        {errorMessage ? (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-bold leading-6 text-red-700 shadow-sm">
+            {errorMessage}
+          </div>
+        ) : null}
         <form
           action={signIn}
           className="rounded-lg border border-blue-100 bg-white p-4 shadow-sm"

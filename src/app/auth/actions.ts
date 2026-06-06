@@ -30,6 +30,12 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) {
+    const message = error.message.toLowerCase();
+
+    if (message.includes("email not confirmed")) {
+      redirect("/login?error=email-not-confirmed");
+    }
+
     redirect("/login?error=signin");
   }
 
