@@ -11,7 +11,6 @@ export const navigation = [
   { label: "Portal", href: "/portal", roles: ["parent"] },
   { label: "Teams", href: "/teams", roles: ["admin", "coach", "parent"] },
   { label: "Players", href: "/players", roles: ["admin", "coach"] },
-  { label: "Attendance", href: "/attendance", roles: ["admin", "coach"] },
   { label: "Payments", href: "/payments", roles: ["admin", "parent"] },
   { label: "Receipts", href: "/receipts", roles: ["admin"] },
   { label: "Calendar", href: "/calendar", roles: ["admin", "coach", "parent"] },
