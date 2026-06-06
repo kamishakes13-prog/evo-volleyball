@@ -32,6 +32,7 @@ type DbPlayer = {
   team_id: string | null;
   jersey_number: number | null;
   notes: string | null;
+  active: boolean;
 };
 
 type DbCoach = {
@@ -153,6 +154,7 @@ export async function getPlayers(): Promise<Player[]> {
     teamId: player.team_id ?? "",
     jersey: player.jersey_number ?? 0,
     notes: player.notes ?? "",
+    active: player.active,
   }));
 }
 

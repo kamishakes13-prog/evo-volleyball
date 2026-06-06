@@ -27,6 +27,7 @@ export type Player = {
   teamId: string;
   jersey: number;
   notes: string;
+  active?: boolean;
 };
 
 export type Invoice = {

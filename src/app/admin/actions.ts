@@ -320,6 +320,55 @@ export async function deletePlayer(formData: FormData) {
   revalidatePath("/private-sessions");
 }
 
+export async function approvePlayer(formData: FormData) {
+  const user = await requireRole(["admin"]);
+
+  if (!rateLimit(`player-approve:${user.email}`, 40, 60_000)) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const playerId = cleanString(formData.get("playerId"), 80);
+
+  if (!playerId) {
+    return;
+  }
+
+  if (!supabase) {
+    revalidatePath("/players");
+    return;
+  }
+
+  const { data: player } = await supabase
+    .from("players")
+    .select("id,player_name,team_id")
+    .eq("id", playerId)
+    .single();
+
+  if (!player?.team_id) {
+    return;
+  }
+
+  await supabase
+    .from("players")
+    .update({ active: true })
+    .eq("id", playerId);
+
+  await supabase.from("audit_logs").insert({
+    actor_email: user.email,
+    action: "player.approve",
+    entity_type: "player",
+    entity_id: playerId,
+    metadata: {
+      playerName: player.player_name,
+      teamId: player.team_id,
+    },
+  });
+
+  revalidatePath("/players");
+  revalidatePath("/portal");
+}
+
 export async function linkParentToPlayer(formData: FormData) {
   const user = await requireRole(["admin"]);
 

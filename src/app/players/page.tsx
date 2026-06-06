@@ -1,4 +1,5 @@
 import {
+  approvePlayer,
   createPlayer,
   deletePlayer,
   linkParentToPlayer,
@@ -110,6 +111,7 @@ export default async function PlayersPage() {
           const teamName =
             teams.find((team) => team.id === player.teamId)?.name ?? "No team";
           const needsTeam = !player.teamId;
+          const needsApproval = player.active === false;
           const linkedParent = parentProfiles.find(
             (profile) => profile.id === player.userId,
           );
@@ -118,7 +120,7 @@ export default async function PlayersPage() {
             <article
               key={player.id}
               className={`rounded-lg border bg-white p-4 shadow-sm ${
-                needsTeam ? "border-lime-300" : "border-blue-100"
+                needsTeam || needsApproval ? "border-lime-300" : "border-blue-100"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -137,15 +139,35 @@ export default async function PlayersPage() {
                       No parent account linked
                     </p>
                   )}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {needsApproval ? (
+                      <span className="rounded-full bg-lime-100 px-2.5 py-1 text-xs font-black uppercase text-blue-950">
+                        Pending admin approval
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-black uppercase text-blue-800">
+                        Approved
+                      </span>
+                    )}
+                    {needsTeam ? (
+                      <span className="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-black uppercase text-yellow-800">
+                        Needs team
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <span
                   className={`rounded-md px-3 py-2 text-sm font-black ${
-                    needsTeam
+                    needsTeam || needsApproval
                       ? "bg-lime-300 text-blue-950"
                       : "bg-blue-800 text-white"
                   }`}
                 >
-                  {needsTeam ? "Assign team" : `${money(balance.remaining)} due`}
+                  {needsApproval
+                    ? "Confirm player"
+                    : needsTeam
+                      ? "Assign team"
+                      : `${money(balance.remaining)} due`}
                 </span>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -258,6 +280,25 @@ export default async function PlayersPage() {
                       Delete Player
                     </ConfirmSubmitButton>
                   </form>
+                  {needsApproval ? (
+                    <form action={approvePlayer}>
+                      <input name="playerId" type="hidden" value={player.id} />
+                      <button
+                        className="w-full rounded-md bg-lime-300 px-3 py-2 text-sm font-black text-blue-950 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={needsTeam}
+                        title={
+                          needsTeam
+                            ? "Assign a team and save before approving."
+                            : "Approve this player for the parent portal."
+                        }
+                        type="submit"
+                      >
+                        {needsTeam
+                          ? "Assign Team Before Approval"
+                          : "Approve Player"}
+                      </button>
+                    </form>
+                  ) : null}
                   <form action={linkParentToPlayer} className="grid gap-2">
                     <input name="playerId" type="hidden" value={player.id} />
                     <select

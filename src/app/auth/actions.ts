@@ -138,6 +138,7 @@ export async function signUp(formData: FormData) {
               Number.isInteger(player.jerseyNumber) && player.jerseyNumber > 0
                 ? player.jerseyNumber
                 : null,
+            active: false,
             notes: notes || "Parent signup - needs team assignment.",
           };
         }),
