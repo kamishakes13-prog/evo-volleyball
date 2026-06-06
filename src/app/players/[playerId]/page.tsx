@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createInvoice } from "@/app/admin/actions";
+import { createInvoice, recordPayment } from "@/app/admin/actions";
 import { money } from "@/app/data";
 import { PageHeader, PageWrap, StatusPill } from "@/components/ui";
 import {
@@ -287,18 +287,66 @@ export default async function PlayerDetailPage({
                         <span className="h-full min-h-8 w-0.5 bg-blue-100" />
                       ) : null}
                     </div>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-black">{invoice.title}</p>
-                        <p className="text-sm font-bold text-slate-500">
-                          {invoice.category} | due {invoice.dueDate || "TBD"}
-                        </p>
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-black">{invoice.title}</p>
+                          <p className="text-sm font-bold text-slate-500">
+                            {invoice.category} | due {invoice.dueDate || "TBD"}
+                          </p>
+                        </div>
+                        <StatusPill status={invoice.status} />
                       </div>
-                      <StatusPill status={invoice.status} />
+                      <p className="mt-2 text-sm font-black">
+                        {money(invoice.paid)} / {money(invoice.amount)}
+                      </p>
+                      {isAdmin &&
+                      invoice.status !== "paid" &&
+                      invoice.status !== "waived" ? (
+                        <form
+                          action={recordPayment}
+                          className="mt-3 grid gap-2 rounded-md border border-blue-100 bg-white p-3 sm:grid-cols-[1fr_1fr_auto]"
+                        >
+                          <input
+                            name="invoiceId"
+                            type="hidden"
+                            value={invoice.id}
+                          />
+                          <input
+                            className="rounded-md border border-blue-100 px-3 py-2 text-sm outline-none focus:border-blue-700"
+                            name="amount"
+                            defaultValue={Math.max(
+                              invoice.amount - invoice.paid,
+                              0,
+                            )}
+                            min="1"
+                            placeholder="Amount"
+                            step="0.01"
+                            type="number"
+                            required
+                          />
+                          <select
+                            className="rounded-md border border-blue-100 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-blue-700"
+                            name="method"
+                            defaultValue="cash"
+                            required
+                          >
+                            <option value="cash">Cash</option>
+                            <option value="zelle">Zelle</option>
+                            <option value="venmo">Venmo</option>
+                            <option value="cash_app">Cash App</option>
+                            <option value="card">Card</option>
+                            <option value="other">Other</option>
+                          </select>
+                          <button
+                            className="rounded-md bg-lime-300 px-3 py-2 text-sm font-black text-blue-950"
+                            type="submit"
+                          >
+                            Accept Payment
+                          </button>
+                        </form>
+                      ) : null}
                     </div>
-                    <p className="mt-2 text-sm font-black">
-                      {money(invoice.paid)} / {money(invoice.amount)}
-                    </p>
                   </div>
                 ))
               ) : (

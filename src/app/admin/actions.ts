@@ -723,7 +723,7 @@ export async function recordPayment(formData: FormData) {
 
   const { data: invoice } = await supabase
     .from("invoices")
-    .select("id,amount_cents,paid_cents,status")
+    .select("id,amount_cents,paid_cents,status,player_id")
     .eq("id", invoiceId)
     .single();
 
@@ -759,6 +759,9 @@ export async function recordPayment(formData: FormData) {
 
   revalidatePath("/payments");
   revalidatePath("/");
+  revalidatePath(`/players/${invoice.player_id}`);
+  revalidatePath("/portal");
+  revalidatePath("/receipts");
 }
 
 export async function createPrivateSession(formData: FormData) {

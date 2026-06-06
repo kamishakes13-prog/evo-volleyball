@@ -16,9 +16,13 @@ export async function createInvoiceCheckout(formData: FormData) {
   const stripe = getStripe();
   const supabase = await createClient();
   const invoiceId = cleanString(formData.get("invoiceId"), 80);
+  const requestedReturnTo = cleanString(formData.get("returnTo"), 120);
+  const returnTo = requestedReturnTo.startsWith("/")
+    ? requestedReturnTo
+    : "/payments";
 
   if (!invoiceId || !supabase || !stripe) {
-    redirect("/payments?error=stripe-not-configured");
+    redirect(`${returnTo}?error=stripe-not-configured`);
   }
 
   const { data: invoice } = await supabase
@@ -28,7 +32,7 @@ export async function createInvoiceCheckout(formData: FormData) {
     .single();
 
   if (!invoice || invoice.status === "paid" || invoice.status === "waived") {
-    redirect("/payments?error=invoice-not-payable");
+    redirect(`${returnTo}?error=invoice-not-payable`);
   }
 
   const amountDue = Math.max(
@@ -37,7 +41,7 @@ export async function createInvoiceCheckout(formData: FormData) {
   );
 
   if (amountDue <= 0) {
-    redirect("/payments?error=invoice-not-payable");
+    redirect(`${returnTo}?error=invoice-not-payable`);
   }
 
   const headerStore = await headers();
@@ -65,8 +69,8 @@ export async function createInvoiceCheckout(formData: FormData) {
     metadata: {
       invoice_id: invoice.id,
     },
-    success_url: `${origin}/payments?stripe=success`,
-    cancel_url: `${origin}/payments?stripe=cancelled`,
+    success_url: `${origin}${returnTo}?stripe=success`,
+    cancel_url: `${origin}${returnTo}?stripe=cancelled`,
   });
 
   await supabase
@@ -75,7 +79,7 @@ export async function createInvoiceCheckout(formData: FormData) {
     .eq("id", invoice.id);
 
   if (!session.url) {
-    redirect("/payments?error=stripe-session");
+    redirect(`${returnTo}?error=stripe-session`);
   }
 
   redirect(session.url);

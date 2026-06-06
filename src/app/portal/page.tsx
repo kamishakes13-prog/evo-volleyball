@@ -23,8 +23,24 @@ function balanceFor(playerId: string, invoices: Invoice[]) {
     );
 }
 
-export default async function ParentPortalPage() {
+const portalMessages: Record<string, string> = {
+  "invoice-not-payable": "That invoice is not payable right now.",
+  "stripe-not-configured":
+    "Card payments are not enabled yet. Please use Cash, Zelle, Venmo, or Cash App and EVO admin will confirm the payment.",
+  "stripe-session":
+    "Card checkout could not start. Please try another payment method.",
+};
+
+export default async function ParentPortalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; stripe?: string }>;
+}) {
   await requireRole(["parent"]);
+  const params = await searchParams;
+  const message = params.error ? portalMessages[params.error] : null;
+  const stripeSuccess =
+    params.stripe === "success" ? "Card payment submitted." : null;
   const [players, teams, invoices, sessions] = await Promise.all([
     getPlayers(),
     getTeams(),
@@ -48,6 +64,16 @@ export default async function ParentPortalPage() {
         title="My player"
         description="Player details, balances, invoices, team schedule, and private session bookings."
       />
+      {message ? (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-bold leading-6 text-red-700 shadow-sm">
+          {message}
+        </div>
+      ) : null}
+      {stripeSuccess ? (
+        <div className="mb-4 rounded-lg border border-lime-300 bg-lime-50 p-4 text-sm font-bold leading-6 text-blue-950 shadow-sm">
+          {stripeSuccess}
+        </div>
+      ) : null}
 
       {players.length ? (
         <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
@@ -147,19 +173,34 @@ export default async function ParentPortalPage() {
                       </p>
                       {invoice.status !== "paid" &&
                       invoice.status !== "waived" ? (
-                        <form action={createInvoiceCheckout} className="mt-3">
-                          <input
-                            name="invoiceId"
-                            type="hidden"
-                            value={invoice.id}
-                          />
-                          <button
-                            className="rounded-md bg-lime-300 px-3 py-2 text-sm font-black text-blue-950"
-                            type="submit"
+                        <div className="mt-3 rounded-md border border-blue-100 bg-white p-3">
+                          <p className="text-xs font-black uppercase text-slate-500">
+                            Payment options
+                          </p>
+                          <p className="mt-1 text-sm font-bold leading-6 text-slate-600">
+                            Pay by card when online payments are enabled, or
+                            pay EVO by Cash, Zelle, Venmo, or Cash App. Admin
+                            will confirm manual payments after they are
+                            received.
+                          </p>
+                          <form
+                            action={createInvoiceCheckout}
+                            className="mt-3"
                           >
-                            Pay Card
-                          </button>
-                        </form>
+                            <input
+                              name="invoiceId"
+                              type="hidden"
+                              value={invoice.id}
+                            />
+                            <input name="returnTo" type="hidden" value="/portal" />
+                            <button
+                              className="rounded-md bg-lime-300 px-3 py-2 text-sm font-black text-blue-950"
+                              type="submit"
+                            >
+                              Pay Card
+                            </button>
+                          </form>
+                        </div>
                       ) : null}
                     </div>
                   ))
